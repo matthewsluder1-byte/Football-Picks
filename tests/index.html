@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pick'em Tests</title>
+  <style>
+    :root { --bg: #fff; --text: #16191d; --ok: #157f3b; --bad: #b42318; --muted: #6b7280; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1216; --text: #e7eaee; --ok: #4ad37f; --bad: #ff7a6b; --muted: #9aa3ad; } }
+    :root[data-theme="dark"] { --bg: #0f1216; --text: #e7eaee; --ok: #4ad37f; --bad: #ff7a6b; --muted: #9aa3ad; }
+    body { background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif; margin: 0; padding: 16px; }
+    .pass { color: var(--ok); } .fail { color: var(--bad); font-weight: 600; } pre { color: var(--muted); white-space: pre-wrap; margin: 2px 0 8px 18px; }
+    h1 { font-size: 18px; } #summary { font-size: 16px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>Pick'em tests</h1>
+  <div id="summary">Running…</div>
+  <div id="out"></div>
+  <script type="module" src="run.js"></script>
+</body>
+</html>

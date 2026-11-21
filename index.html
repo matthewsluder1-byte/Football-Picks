@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Pick'em Tracker</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Pick'em</h1>
+    <select id="weekSel" aria-label="Week"></select>
+    <span id="status" class="muted small"></span>
+  </header>
+  <div id="replayBar" class="replaybar" hidden></div>
+  <nav class="tabs">
+    <button data-tab="live" class="on">Live</button>
+    <button data-tab="picks">Picks</button>
+    <button data-tab="import">Import</button>
+  </nav>
+  <main id="view"><p class="muted">Loading…</p></main>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
