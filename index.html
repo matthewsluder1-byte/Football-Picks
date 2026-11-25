@@ -5,7 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Pick'em Tracker</title>
-  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // GitHub Pages lets browsers cache files for 10 minutes, so right after an update a page could
+    // run old code (or a mix of old and new). Load fresh copies every time; the files are small.
+    // Add any new js/ module to this list.
+    (function () {
+      var v = Date.now(), imports = {};
+      ['app', 'espn', 'parser', 'names', 'merge', 'scoring', 'store', 'odds', 'replay', 'demo'].forEach(function (m) {
+        imports[new URL('js/' + m + '.js', location.href).href] = new URL('js/' + m + '.js?v=' + v, location.href).href;
+      });
+      var map = document.createElement('script');
+      map.type = 'importmap';
+      map.textContent = JSON.stringify({ imports: imports });
+      document.head.appendChild(map);
+      var css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'css/style.css?v=' + v;
+      document.head.appendChild(css);
+    })();
+  </script>
 </head>
 <body>
   <header class="top">
@@ -20,6 +37,6 @@
     <button data-tab="import">Import</button>
   </nav>
   <main id="view"><p class="muted">Loading…</p></main>
-  <script type="module" src="js/app.js"></script>
+  <script type="module">import './js/app.js';</script>
 </body>
 </html>
