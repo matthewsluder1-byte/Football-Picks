@@ -1,5 +1,6 @@
 {
   "season": 2026,
   "me": "sluder,matt",
-  "useInitials": false
+  "useInitials": false,
+  "github": { "owner": "matthewsluder1-byte", "repo": "Football-Picks", "branch": "main" }
 }

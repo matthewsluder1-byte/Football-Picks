@@ -3,7 +3,7 @@ import { parseGrid, matchSchedule, tiebreakerGameId, HIDDEN, NONE } from './pars
 import { matchNames, defaultDecisions, applyDecisions } from './names.js';
 import { buildWeek, isTeam } from './merge.js';
 import { scorePlayers, gameResult, lockTime } from './scoring.js';
-import { loadJSON, saveJSON } from './store.js';
+import { loadJSON, saveFiles, isLocal, repoInfo, getToken, setToken, checkGitHub } from './store.js';
 import { weekOdds, winProbHome } from './odds.js';
 import { rewindBoard, GAME_MS } from './replay.js';
 import { demoWeek, DEMO } from './demo.js';
@@ -279,8 +279,54 @@ function renderImport(v) {
       <textarea id="paste" rows="10" placeholder="Paste the picks grid here"></textarea>
       <div class="actions"><button id="parseBtn" class="primary">Read grid</button></div>
       <div id="importMsg"></div>
-    </section>`;
+    </section>
+    ${isLocal() ? '' : '<section class="ghsetup" id="ghSetup"></section>'}`;
   $('#parseBtn').onclick = () => startImport($('#paste').value);
+  if (!isLocal()) renderGitHubSetup();
+}
+
+// GitHub saving setup (hosted page only). The token is typed by the user and kept on this device.
+async function renderGitHubSetup(checkNow = true) {
+  const box = $('#ghSetup');
+  if (!box) return;
+  const repo = repoInfo(S.config);
+  if (!repo) { box.innerHTML = '<p class="muted small">Saving is off: this address is not a GitHub Pages site and data/config.json has no "github" entry.</p>'; return; }
+  const token = getToken();
+  const name = `${repo.owner}/${repo.repo}`;
+  if (token) {
+    box.innerHTML = `<h3>Saving to GitHub</h3><p class="muted small" id="ghState">Checking the token for ${esc(name)}…</p>
+      <div class="actions left"><button id="ghForget">Remove token from this device</button></div>`;
+    $('#ghForget').onclick = () => { setToken(null); renderGitHubSetup(); };
+    if (!checkNow) return;
+    const c = await checkGitHub(repo, token);
+    const st = $('#ghState');
+    if (st) st.outerHTML = c.ok
+      ? `<p class="ok small" id="ghState">Ready: imports save to ${esc(name)} as ${esc(c.login)}.</p>`
+      : `<p class="err small" id="ghState">${esc(c.error)}</p>`;
+    return;
+  }
+  const newTokenUrl = 'https://github.com/settings/personal-access-tokens/new';
+  box.innerHTML = `<h3>Set up saving (once per device)</h3>
+    <ol class="small">
+      <li>Open <a href="${newTokenUrl}" target="_blank" rel="noopener">GitHub → new fine-grained token</a>.</li>
+      <li>Name it "pick'em", pick an expiration, and under <b>Repository access</b> choose <b>Only select repositories</b> → <b>${esc(repo.repo)}</b>.</li>
+      <li>Under <b>Permissions → Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>. Nothing else.</li>
+      <li>Generate it, copy it, and paste it here.</li>
+    </ol>
+    <div class="tokenrow"><input id="ghToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" aria-label="GitHub token">
+      <button id="ghSave" class="primary">Save token</button></div>
+    <p class="muted small">The token stays in this browser only. It can change files in ${esc(name)} and nothing else.</p>
+    <div id="ghMsg"></div>`;
+  $('#ghSave').onclick = async () => {
+    const t = $('#ghToken').value.trim();
+    if (!t) return;
+    $('#ghMsg').innerHTML = '<p class="muted small">Checking…</p>';
+    const c = await checkGitHub(repo, t);
+    if (!c.ok) { $('#ghMsg').innerHTML = `<p class="err small">${esc(c.error)}</p>`; return; }
+    setToken(t);
+    renderGitHubSetup(false);
+    $('#ghState').outerHTML = `<p class="ok small" id="ghState">Ready: imports save to ${esc(name)} as ${esc(c.login)}.</p>`;
+  };
 }
 
 async function boardForWeek(w) {
@@ -401,17 +447,29 @@ async function saveImport() {
   }));
   const weeks = { ...(S.index?.weeks || {}) };
   weeks[S.season] = [...new Set([...(weeks[S.season] || []), P.week])].sort((a, b) => a - b);
-  const results = [
-    await saveJSON(`data/${S.season}/week-${P.week}.json`, week),
-    await saveJSON('data/players.json', { players }),
-    await saveJSON('data/index.json', { weeks }),
+  const files = [
+    { path: `data/${S.season}/week-${P.week}.json`, data: week },
+    { path: 'data/players.json', data: { players } },
+    { path: 'data/index.json', data: { weeks } },
   ];
-  S.roster = players; S.index = { weeks };
-  const downloaded = results.includes('downloaded');
+  const revealed = Object.values(week.picks).reduce((n, p) => n + Object.values(p).filter(isTeam).length, 0);
+  let res;
+  try {
+    res = await saveFiles(files, { config: S.config, message: `Week ${P.week} picks: ${Object.keys(week.picks).length} players, ${revealed} picks revealed` });
+  } catch (e) {
+    btn.disabled = false; btn.textContent = `Save week ${P.week}`;
+    $('#saveMsg').innerHTML = `<p class="err">Not saved: ${esc(e.message)}. Nothing was lost; fix it and click Save again${e.status === 401 || e.status === 403 || e.status === 404 ? ' (check the GitHub token on the Import tab)' : ''}.</p>`;
+    return;
+  }
+  S.roster = S.savedRoster = players; S.index = { weeks };
   S.pending = null;
-  $('#view').innerHTML = `<p class="${downloaded ? 'warn' : 'ok'}">${downloaded
-    ? 'No local server to save to, so the files were downloaded instead. Put them in the data folder.'
-    : `Saved week ${P.week}: ${week.games.length} games, ${Object.keys(week.picks).length} players.`}</p>`;
+  const summary = `week ${P.week}: ${week.games.length} games, ${Object.keys(week.picks).length} players`;
+  $('#view').innerHTML = `<p class="${res.how === 'downloaded' ? 'warn' : 'ok'}">${
+    res.how === 'downloaded' ? (isLocal()
+      ? 'No local server to save to, so the files were downloaded instead. Put them in the data folder.'
+      : 'GitHub saving is not set up on this device, so the files were downloaded instead. Set it up on the Import tab, or put the files in the data folder and push.')
+    : res.how === 'github' ? `Saved ${summary} to GitHub. The site updates for everyone in a minute or two.`
+    : `Saved ${summary}.`}</p>`;
   buildWeekSelect();
   setTimeout(() => { S.tab = 'picks'; loadWeek(P.week); }, 1200);
 }

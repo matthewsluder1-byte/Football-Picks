@@ -4,7 +4,9 @@ A static page (HTML + JavaScript, no backend) that tracks a straight-up pick'em 
 footballfrenzyonline.com: picks pasted in, live scores from ESPN, and (Phase 2) live odds of
 winning the week.
 
-Status: **Phase 2** (picks in, scores in, odds of winning the week). Phases 3–4 add hosting and my own picks.
+Status: **Phase 3** (picks, scores, odds, hosted on GitHub Pages with saving from any device). Phase 4 adds my own picks.
+
+Live site: https://matthewsluder1-byte.github.io/Football-Picks/
 
 ## Setup (this computer)
 
@@ -105,7 +107,7 @@ js/names.js     roster matching, aliases, initials
 js/merge.js     week file format + re-paste merge rules
 js/scoring.js   correct / max possible, pick lock times
 js/espn.js      score feed client
-js/store.js     load/save data files
+js/store.js     load/save data files (local server, or one GitHub commit when hosted)
 js/odds.js      game win chances + week win odds (Monte Carlo)
 js/replay.js    rewinds a finished week to any moment (replay mode)
 js/demo.js      demo picks for week 10 replay (never saved)
@@ -130,3 +132,24 @@ to move the clock (before the lock, during the Sunday games, Monday night, all f
 final scores come in quarter by quarter. With no saved week 10, it uses demo picks: the real
 Thursday paste, with hidden picks filled in at random. Import is turned off in replay, so nothing
 gets saved.
+
+## Hosted site and saving (Phase 3)
+
+The site is served by GitHub Pages from the `main` branch of
+`matthewsluder1-byte/Football-Picks` (set in `data/config.json` → `github`). Every push updates it
+in a minute or two.
+
+**Saving from the hosted page:** each device needs a GitHub token once. The Import tab walks
+through it: a *fine-grained* token, only this repo, **Contents: Read and write**, nothing else.
+The token is kept in that browser only (localStorage) and is never put in the repo. Each import
+saves the week, roster and index as **one commit**. If two devices save at once, the second one
+rebuilds on top of the first and retries.
+
+Pages takes a minute or two to publish a save. Until then, the device that saved shows its own
+copy (kept for 15 minutes), so the page doesn't jump back to the old data.
+
+If the token expires or is revoked, saving shows an error and keeps the import on screen. Make
+a new token, remove the old one from the Import tab, paste the new one, and click Save again.
+
+**Local server** (`tools\serve.ps1`) still saves straight to the `data` folder. Commit and push
+those files to put them on the site.

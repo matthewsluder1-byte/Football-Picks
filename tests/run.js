@@ -2,6 +2,7 @@
 import { tests } from './harness.js';
 import './parser.test.js';
 import './odds.test.js';
+import './store.test.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;

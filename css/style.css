@@ -93,3 +93,10 @@ table.list td select { max-width: 220px; }
 .roots li { display: flex; gap: 6px; padding: 2px 0; border-bottom: 1px solid var(--line); }
 .roots li .num { margin-left: auto; }
 .wp { color: var(--text); font-weight: 600; }
+.ghsetup { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.ghsetup h3 { margin-top: 0; }
+.ghsetup ol { margin: 4px 0 10px; padding-left: 20px; }
+.ghsetup a { color: var(--accent); }
+.tokenrow { display: flex; gap: 8px; }
+.tokenrow input { flex: 1; min-width: 0; font: 13px ui-monospace, Consolas, monospace; padding: 8px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+.actions.left { justify-content: flex-start; }
