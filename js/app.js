@@ -429,7 +429,9 @@ function renderConfirm(v) {
         <button id="saveBtn" class="primary" ${errors.length ? 'disabled' : ''}>Save week ${P.week}</button>
       </div>
       <div id="saveMsg"></div>
-    </section>`;
+    </section>
+    ${needsToken() ? '<section class="ghsetup" id="ghSetup"></section>' : ''}`;
+  if (needsToken()) renderGitHubSetup();
   v.querySelectorAll('select[data-key]').forEach(s => s.onchange = () => { P.decisions[s.dataset.key] = s.value; renderConfirm(v); });
   $('#cancelBtn').onclick = () => { S.pending = null; render(); };
   $('#saveBtn').onclick = () => saveImport();
@@ -437,8 +439,16 @@ function renderConfirm(v) {
 
 function gameLabel(week, id) { const g = week.games.find(x => x.id === id); return g ? `${g.away}@${g.home}` : id; }
 
+/** Hosted page in a browser that has no GitHub token yet: Save would only download the files. */
+const needsToken = () => !isLocal() && !!repoInfo(S.config) && !getToken();
+
 async function saveImport() {
   const P = S.pending;
+  if (needsToken()) {
+    $('#saveMsg').innerHTML = `<p class="err">This browser isn't set up to save yet. Paste your GitHub token under <b>Set up saving</b> below, then click Save again. Your import stays here.</p>`;
+    $('#ghSetup')?.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
   const btn = $('#saveBtn'); btn.disabled = true; btn.textContent = 'Saving…';
   const { players, week } = previewWeek();
   // Fill in any missing pre-game lines from the game summary (kept there after kickoff).
@@ -471,7 +481,7 @@ async function saveImport() {
     : res.how === 'github' ? `Saved ${summary} to GitHub. The site updates for everyone in a minute or two.`
     : `Saved ${summary}.`}</p>`;
   buildWeekSelect();
-  setTimeout(() => { S.tab = 'picks'; loadWeek(P.week); }, 1200);
+  if (res.how !== 'downloaded') setTimeout(() => { S.tab = 'picks'; loadWeek(P.week); }, 1200);
 }
 
 init();
