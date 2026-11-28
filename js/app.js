@@ -7,6 +7,9 @@ import { loadJSON, saveFiles, isLocal, repoInfo, getToken, setToken, checkGitHub
 import { weekOdds, winProbHome } from './odds.js';
 import { rewindBoard, GAME_MS } from './replay.js';
 import { demoWeek, DEMO } from './demo.js';
+import { seasonStandings, weekSummary } from './season.js';
+import { winHistory } from './history.js';
+import { lineChart, attachChartHover } from './chart.js';
 
 const S = {
   config: null, roster: [], index: null,
@@ -15,7 +18,12 @@ const S = {
   // Replay mode (?replay=<week>): a finished week played back at a chosen moment. Never saves.
   replay: null,     // { at: ms, real: final board, realWeek }
   savedRoster: null, odds: null, oddsKey: '',
+  hist: null, histKey: '', histCache: new Map(), histRun: 0,   // win-% over time
+  pastWeeks: new Map(),                                       // week -> { data, board } for Season
+  seasonSort: { key: 'rank', dir: 1 }, seasonRun: 0,
+  cardPid: null,
 };
+const plink = pid => `<button class="plink" data-pid="${esc(pid)}">${esc(display(pid))}</button>`;
 const now = () => (S.replay?.at ?? Date.now());
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -43,6 +51,8 @@ async function init() {
   buildWeekSelect();
   document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { S.tab = b.dataset.tab; render(); }));
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !S.replay) refresh(); });
+  // Any player name on the page opens their card.
+  document.addEventListener('click', e => { const b = e.target.closest('.plink'); if (b) openCard(b.dataset.pid); });
   await loadWeek(S.replay ? rw : S.currentWeek);
 }
 
@@ -145,7 +155,10 @@ function render() {
   if (S.tab === 'import' && S.replay) v.innerHTML = '<p class="empty">Import is off in replay mode, so test data never gets saved. <a href="./">Exit replay</a> to import.</p>';
   else if (S.tab === 'live') v.innerHTML = renderLive();
   else if (S.tab === 'picks') v.innerHTML = renderPicks();
+  else if (S.tab === 'season') renderSeason(v);
   else renderImport(v);
+  if (S.tab === 'live') loadHistory();
+  if (S.cardPid && $('#card').open) renderCard();
 }
 
 // ---------- Odds ----------
@@ -183,7 +196,7 @@ function renderOddsCard() {
     : `<div class="muted">You (${esc(S.config.me)}) are not in this week's picks.</div>`;
   return `<section class="odds">
     <div>${meLine}
-      <div class="small topodds">${top.map(([pid, x]) => `<span class="${pid === me ? 'me' : ''}">${esc(display(pid))} ${pct(x.win)}</span>`).join(' · ')}</div>
+      <div class="small topodds">${top.map(([pid, x]) => `<span class="${pid === me ? 'me' : ''}">${plink(pid)} ${pct(x.win)}</span>`).join(' · ')}</div>
       ${hidden ? `<div class="muted small">${hidden} picks still hidden: odds assume they split like the rest of the pool. Re-paste after the lock for exact odds.</div>` : ''}
     </div>
     ${roots.length ? `<div><div class="small muted">Root for</div><ul class="roots">${roots.map(s => {
@@ -241,7 +254,8 @@ function renderLive() {
     </article>`;
   });
   const note = S.weekData ? '' : `<p class="note">No picks saved for week ${S.week}. Use <b>Import</b> to paste the grid.</p>`;
-  return `${note}${renderOddsCard()}<section class="games">${cards.join('')}</section>`;
+  const hist = S.weekData ? `<section class="histbox"><h3>Chance to win week ${S.week}</h3><div id="histChart">${S.hist && S.histKey.startsWith(`${S.week}|`) ? histChartHtml() : '<p class="muted small">Working out the week so far…</p>'}</div></section>` : '';
+  return `${note}${renderOddsCard()}${hist}<section class="games">${cards.join('')}</section>`;
 }
 
 // ---------- Picks ----------
@@ -249,7 +263,7 @@ function picksTable(weekData, rows, opts = {}) {
   const games = [...weekData.games].sort((a, b) => a.order - b.order);
   const head = games.map(g => `<th class="g ${g.id === weekData.tiebreakGameId ? 'tb' : ''}" title="${esc(g.awayName)} at ${esc(g.homeName)}">${esc(g.away)}<br>${esc(g.home)}</th>`).join('');
   const body = rows.map(r => `<tr class="${r.isMe ? 'me' : ''}">
-      <th class="pname">${esc(r.label)}</th>
+      <th class="pname">${r.pid && opts.scores ? plink(r.pid) : esc(r.label)}</th>
       ${opts.scores ? `<td class="num">${r.correct}</td><td class="num muted">${r.max}</td><td class="num">${winLabel(r.win, r.max, opts.best ?? 0)}</td>` : ''}
       ${r.cells.map(c => `<td class="pk ${c.state || ''}">${c.value === HIDDEN ? '·' : c.value === NONE ? '—' : esc(c.value)}</td>`).join('')}
     </tr>`).join('');
@@ -268,6 +282,176 @@ function renderPicks() {
   return `<p class="muted small">${scored.length} players · last pasted ${last ? fmtTime(last.at) : '?'} ·
       <span class="pk win">right</span> <span class="pk loss">wrong</span> <span class="pk open">pending</span> · = hidden — = no pick</p>
     ${picksTable(S.weekData, scored, { scores: true, best: Math.max(0, ...scored.map(s => s.correct)) })}`;
+}
+
+// ---------- Win % over time ----------
+/** Me plus the four players most likely to win right now. Colors follow the player, not the rank. */
+function histSeries(extra = null) {
+  const last = S.hist.at(-1).players;
+  const me = meId();
+  const peak = p => Math.max(...S.hist.map(h => h.players[p] ?? 0));
+  // Most likely now; once the week is settled, the ones who had the best shot along the way.
+  const others = Object.keys(last).filter(p => p !== me && p !== extra).sort((a, b) => last[b] - last[a] || peak(b) - peak(a)).slice(0, extra ? 3 : 4);
+  if (extra && extra !== me) others.push(extra);
+  others.sort((a, b) => display(a).localeCompare(display(b)));
+  const s = [];
+  if (me && me in last) s.push({ pid: me, label: `${display(me)} (you)`, slot: 1, me: true });
+  others.forEach((pid, i) => s.push({ pid, label: display(pid), slot: i + 2 }));
+  return s;
+}
+const histChartHtml = () => lineChart(S.hist, histSeries());
+
+async function loadHistory() {
+  if (!S.weekData || !S.board) return;
+  const key = `${S.week}|${S.weekData.updatedAt}|${S.board.fetchedAt}`;
+  if (S.histKey === key) { const box = $('#histChart'); if (box) attachChartHover(box); return; }
+  const run = ++S.histRun;
+  try {
+    const base = S.replay ? S.replay.real : S.board;
+    const pts = await winHistory(S.weekData, base, now(), { cache: S.histCache, current: S.board });
+    if (run !== S.histRun) return;
+    S.hist = pts; S.histKey = key;
+  } catch (e) {
+    const box = $('#histChart');
+    if (box) box.innerHTML = `<p class="err small">Chart failed: ${esc(e.message)}</p>`;
+    return;
+  }
+  const box = $('#histChart');
+  if (box && S.tab === 'live') { box.innerHTML = histChartHtml(); attachChartHover(box); }
+  if (S.cardPid && $('#card').open) renderCard();
+}
+
+// ---------- Player card ----------
+function openCard(pid) {
+  S.cardPid = pid;
+  const d = $('#card');
+  if (!d.dataset.wired) {
+    d.dataset.wired = '1';
+    d.addEventListener('click', e => { if (e.target === d) d.close(); });   // tap outside closes
+    d.addEventListener('close', () => { S.cardPid = null; });
+  }
+  renderCard();
+  if (!d.open) d.showModal();
+}
+
+function renderCard() {
+  const pid = S.cardPid, d = $('#card');
+  if (!pid) return;
+  const me = meId();
+  let body = '';
+  const picks = S.weekData?.picks?.[pid];
+  if (picks && S.board) {
+    const ev = eventsById();
+    const scored = scorePlayers(S.weekData, ev, now());
+    const mine = scored.find(s => s.pid === pid);
+    const best = Math.max(0, ...scored.map(s => s.correct));
+    const o = weekOdds(S.weekData, ev, { now: now(), focus: pid });
+    const win = o.players[pid].win;
+    const sum = weekSummary(S.weekData, ev, now());
+    const [cls, status] = sum.final
+      ? (sum.winners.includes(pid) ? ['ok', sum.winners.length > 1 ? `Split week ${S.week} (${sum.winners.length} ways)` : `Won week ${S.week}`] : ['', 'Week over'])
+      : mine.max < best ? ['bad', "Out: can't catch the leader"]
+      : win >= 0.995 ? ['ok', 'All but certain']
+      : win === 0 ? ['bad', 'Alive on paper, no way through in 10,000 sims']
+      : ['', 'Alive'];
+    const needs = o.swing.filter(s => s.ifTeam != null && s.ifOther != null && s.ifTeam - s.ifOther >= 0.01).slice(0, 8);
+    const pickOf = gid => { const v = picks[gid] ?? NONE; return isTeam(v) ? `picked ${esc(v)}` : v === HIDDEN ? 'pick hidden' : 'no pick'; };
+    const chartSeries = S.hist && S.histKey.startsWith(`${S.week}|`)
+      ? (pid === me ? [{ pid, label: `${display(pid)} (you)`, slot: 1, me: true }]
+        : [...(me && me in S.hist.at(-1).players ? [{ pid: me, label: `${display(me)} (you)`, slot: 1 }] : []), { pid, label: display(pid), slot: 2, me: true }])
+      : null;
+    body = `<p><span class="badge ${cls}">${esc(status)}</span></p>
+      <div class="stats">
+        <div><span class="muted small">Right</span><b>${mine.correct}</b></div>
+        <div><span class="muted small">Max</span><b>${mine.max}</b></div>
+        <div><span class="muted small">Win week</span><b>${winLabel(win, mine.max, best)}</b></div>
+        <div><span class="muted small">Projected</span><b>${o.players[pid].expCorrect.toFixed(1)}</b></div>
+      </div>
+      ${needs.length ? `<h3>Needs</h3><p class="muted small">Chance to win the week if each result goes the wrong way → the right way.</p>
+        <ul class="needs">${needs.map(s => `<li><b>${esc(s.team)}</b> <span class="muted">over ${esc(s.other)} · ${pickOf(s.gameId)}</span>${s.ifOther < 0.005 ? ' <span class="badge bad">must win</span>' : ''}<span class="num">${pct(s.ifOther)} → ${pct(s.ifTeam)}</span></li>`).join('')}</ul>`
+        : sum.final ? '' : '<p class="muted small">No single game moves their chances much right now.</p>'}
+      ${chartSeries ? `<h3>Chance over the week</h3>${lineChart(S.hist, chartSeries)}` : ''}`;
+  } else {
+    body = `<p class="muted">No picks for week ${S.week}.</p>`;
+  }
+  const sr = S.seasonData?.rows.find(r => r.pid === pid);
+  if (sr) body += `<h3>Season</h3><p>${sr.total} right · rank ${sr.rank} of ${S.seasonData.rows.length} · ${fmtWins(sr.wins)} weekly win${sr.wins === 1 ? '' : 's'}${sr.avgMiss != null ? ` · average Monday miss ${sr.avgMiss.toFixed(1)}` : ''}</p>`;
+  d.innerHTML = `<div class="head"><h2>${esc(display(pid))}${pid === me ? ' (you)' : ''}</h2><button id="cardClose">Close</button></div><div class="body">${body}</div>`;
+  $('#cardClose').onclick = () => d.close();
+  attachChartHover(d);
+}
+
+// ---------- Season ----------
+const fmtWins = w => (Number.isInteger(w) ? String(w) : w.toFixed(1));
+
+async function loadSeason() {
+  const saved = S.index?.weeks?.[S.season] || [];
+  const weeks = [...new Set([...saved, ...(S.weekData && !S.weekData.demo ? [S.week] : [])])];
+  const list = await Promise.all(weeks.map(async w => {
+    if (w === S.week && S.weekData && S.board) return { week: w, data: S.weekData, events: eventsById() };
+    let c = S.pastWeeks.get(w);
+    if (!c) {
+      const data = await loadJSON(`data/${S.season}/week-${w}.json`, null);
+      if (!data) return null;
+      const board = await fetchScoreboard(S.season, w);
+      c = { data, board };
+      if (board.events.every(e => e.state === 'post')) S.pastWeeks.set(w, c);   // finished weeks never change
+    }
+    return { week: w, data: c.data, events: new Map(c.board.events.map(e => [e.id, e])) };
+  }));
+  return seasonStandings(list.filter(Boolean), now());
+}
+
+async function renderSeason(v) {
+  if (S.seasonData) { v.innerHTML = seasonHtml(S.seasonData); wireSeason(v); }
+  else v.innerHTML = '<p class="muted">Adding up the season…</p>';
+  const run = ++S.seasonRun;
+  let st;
+  try { st = await loadSeason(); } catch (e) {
+    if (run === S.seasonRun && S.tab === 'season' && !S.seasonData) v.innerHTML = `<p class="err">Could not load the season: ${esc(e.message)}</p>`;
+    return;
+  }
+  if (run !== S.seasonRun) return;
+  S.seasonData = st;
+  if (S.tab === 'season') { v.innerHTML = seasonHtml(st); wireSeason(v); }
+}
+
+function seasonHtml(st) {
+  if (!st.rows.length) return '<p class="empty">No weeks saved yet. Use <b>Import</b>.</p>';
+  const me = meId();
+  const hasMiss = st.rows.some(r => r.avgMiss != null);
+  const { key, dir } = S.seasonSort;
+  const val = r => key === 'rank' ? r.rank : key === 'name' ? display(r.pid).toLowerCase() : key === 'total' ? r.total
+    : key === 'wins' ? r.wins : key === 'miss' ? (r.avgMiss ?? Infinity) : (r.byWeek[key.slice(1)]?.correct ?? -1);
+  const rows = [...st.rows].sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : 0) * dir || a.rank - b.rank; });
+  const th = (k, label, cls = 'num', title = '') => `<th class="sort ${cls} ${key === k ? 'on' : ''}" data-sort="${k}"${title ? ` title="${esc(title)}"` : ''}>${label}${key === k ? (dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+  const missing = Array.from({ length: Math.max(0, Math.min(S.currentWeek, 18)) }, (_, i) => i + 1).filter(w => !st.weeks.includes(w));
+  const notes = [`Totals from ${st.weeks.length} saved week${st.weeks.length === 1 ? '' : 's'} (${st.weeks.join(', ')}). Weeks still being played count what's right so far.`];
+  if (missing.length) notes.push(`Not saved yet: week${missing.length === 1 ? '' : 's'} ${missing.join(', ')}. To add one, choose it in the week menu at the top, then paste that week's grid on Import.`);
+  if (!hasMiss) notes.push("Monday-total guesses aren't in the pasted grid (they show as XX), so tied weeks are split and the season tiebreaker (average Monday miss) can't be worked out yet.");
+  return `<section class="season">
+    ${notes.map(n => `<p class="muted small">${esc(n)}</p>`).join('')}
+    <div class="tablewrap"><table>
+      <thead><tr>${th('rank', '#')}${th('name', 'Player', 'pname')}${th('total', 'Right')}${th('wins', 'Weeks won')}${hasMiss ? th('miss', 'Avg miss', 'num', 'Average distance from the Monday-night total (season tiebreaker)') : ''}
+        ${st.weeks.map(w => th(`w${w}`, `W${w}`)).join('')}</tr></thead>
+      <tbody>${rows.map(r => `<tr class="${r.pid === me ? 'me' : ''}">
+        <td class="num">${r.rank}</td><th class="pname">${plink(r.pid)}</th>
+        <td class="num"><b>${r.total}</b></td><td class="num">${r.wins ? fmtWins(r.wins) : ''}</td>
+        ${hasMiss ? `<td class="num">${r.avgMiss != null ? r.avgMiss.toFixed(1) : ''}</td>` : ''}
+        ${st.weeks.map(w => { const b = r.byWeek[w]; return `<td class="num wk ${b?.won ? 'won' : ''} ${b && !b.final ? 'open' : ''}" ${b?.won ? 'title="Won the week"' : ''}>${b ? b.correct : ''}</td>`; }).join('')}
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <p class="muted small">Tap a column to sort. Green = won that week; grey italics = week not finished.</p>
+  </section>`;
+}
+
+function wireSeason(v) {
+  v.querySelectorAll('th[data-sort]').forEach(h => h.onclick = () => {
+    const k = h.dataset.sort, cur = S.seasonSort;
+    const firstDir = k === 'rank' || k === 'name' || k === 'miss' ? 1 : -1;
+    S.seasonSort = cur.key === k ? { key: k, dir: -cur.dir } : { key: k, dir: firstDir };
+    v.innerHTML = seasonHtml(S.seasonData); wireSeason(v);
+  });
 }
 
 // ---------- Import ----------
@@ -472,6 +656,7 @@ async function saveImport() {
     return;
   }
   S.roster = S.savedRoster = players; S.index = { weeks };
+  S.pastWeeks.delete(P.week);
   S.pending = null;
   const summary = `week ${P.week}: ${week.games.length} games, ${Object.keys(week.picks).length} players`;
   $('#view').innerHTML = `<p class="${res.how === 'downloaded' ? 'warn' : 'ok'}">${

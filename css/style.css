@@ -2,18 +2,21 @@
   --bg: #f6f7f9; --surface: #ffffff; --text: #16191d; --muted: #6b7280; --line: #e3e6ea;
   --accent: #1f6feb; --ok: #157f3b; --ok-bg: #dcf3e4; --bad: #b42318; --bad-bg: #fde4e1;
   --open-bg: #eef1f5; --warn: #8a5a00; --warn-bg: #fff4d6; --me-bg: #eaf2ff; --live: #d92d20;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1216; --surface: #171b21; --text: #e7eaee; --muted: #9aa3ad; --line: #2a3038;
     --accent: #5a9cff; --ok: #4ad37f; --ok-bg: #133524; --bad: #ff7a6b; --bad-bg: #3d1a17;
     --open-bg: #222831; --warn: #ffcc66; --warn-bg: #3a2f12; --me-bg: #16263d; --live: #ff6b5e;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1216; --surface: #171b21; --text: #e7eaee; --muted: #9aa3ad; --line: #2a3038;
   --accent: #5a9cff; --ok: #4ad37f; --ok-bg: #133524; --bad: #ff7a6b; --bad-bg: #3d1a17;
   --open-bg: #222831; --warn: #ffcc66; --warn-bg: #3a2f12; --me-bg: #16263d; --live: #ff6b5e;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -100,3 +103,51 @@ table.list td select { max-width: 220px; }
 .tokenrow { display: flex; gap: 8px; }
 .tokenrow input { flex: 1; min-width: 0; font: 13px ui-monospace, Consolas, monospace; padding: 8px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
 .actions.left { justify-content: flex-start; }
+
+/* Player links, player card */
+.plink { all: unset; cursor: pointer; border-bottom: 1px dotted var(--muted); }
+.plink:hover, .plink:focus-visible { color: var(--accent); border-color: var(--accent); }
+dialog.card { width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 40px); padding: 0; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+dialog.card::backdrop { background: rgb(0 0 0 / .45); }
+.card .head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+.card .head h2 { margin: 0; font-size: 17px; }
+.card .head button { margin-left: auto; padding: 4px 10px; }
+.card .body { padding: 10px 14px 14px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 8px; }
+.stats div { background: var(--bg); border-radius: 8px; padding: 6px 8px; }
+.stats b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.badge { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--open-bg); }
+.badge.ok { background: var(--ok-bg); } .badge.bad { background: var(--bad-bg); }
+.needs { list-style: none; padding: 0; margin: 4px 0; font-size: 13px; }
+.needs li { display: flex; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+.needs li .num { margin-left: auto; }
+
+/* Win % chart */
+.histbox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.histbox h3 { margin: 0 0 4px; }
+.chart .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-bottom: 4px; }
+.chart .plot { position: relative; touch-action: pan-y; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .gl { stroke: var(--line); stroke-width: 1; }
+.chart .dl { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .ax { fill: var(--muted); font-size: 10px; }
+.chart .ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .ln.me { stroke-width: 3; }
+.chart .dot { stroke: var(--surface); stroke-width: 2; }
+.chart .xh { stroke: var(--muted); stroke-width: 1; }
+.chart .tip { position: absolute; top: 0; min-width: 130px; padding: 6px 8px; font-size: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 8px rgb(0 0 0 / .15); pointer-events: none; }
+.chart .tip[hidden] { display: none; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.ln.s1 { stroke: var(--s1); } .dot.s1 { fill: var(--s1); } .sw.s1 { background: var(--s1); }
+.ln.s2 { stroke: var(--s2); } .dot.s2 { fill: var(--s2); } .sw.s2 { background: var(--s2); }
+.ln.s3 { stroke: var(--s3); } .dot.s3 { fill: var(--s3); } .sw.s3 { background: var(--s3); }
+.ln.s4 { stroke: var(--s4); } .dot.s4 { fill: var(--s4); } .sw.s4 { background: var(--s4); }
+.ln.s5 { stroke: var(--s5); } .dot.s5 { fill: var(--s5); } .sw.s5 { background: var(--s5); }
+
+/* Season */
+.season th.sort { cursor: pointer; user-select: none; }
+.season th.sort.on { color: var(--accent); }
+.season td.wk.won { background: var(--ok-bg); color: var(--ok); font-weight: 600; }
+.season td.wk.open { color: var(--muted); font-style: italic; }
+.season tr.me th, .season tr.me td { background: var(--me-bg); font-weight: 600; }
+.season .pname { position: sticky; left: 0; background: var(--surface); z-index: 1; }

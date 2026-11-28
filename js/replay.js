@@ -15,8 +15,9 @@ export function rewindEvent(e, at) {
     return { ...e, state: 'pre', completed: false, detail: '', period: 0, clock: null, displayClock: '',
       away: blank(e.away), home: blank(e.home), possession: null, downDistance: '', redZone: false };
   }
-  // Only finished games can be replayed; anything else keeps its real state.
-  if (e.state !== 'post' || !e.completed || at >= k + GAME_MS) return e;
+  const live = e.state === 'in';
+  if (!live && (e.state !== 'post' || !e.completed)) return e;
+  if (at >= k + GAME_MS) return e;
 
   const real = at - k;
   const halftime = real >= PLAY_MS / 2 && real < PLAY_MS / 2 + HALF_MS;
@@ -25,6 +26,8 @@ export function rewindEvent(e, at) {
   const period = halftime ? 2 : Math.floor(g / 900) + 1;
   const clock = halftime ? 0 : Math.round(900 - (g % 900));
   const done = halftime ? 2 : period - 1;                     // completed quarters
+  // A game still being played can only be rewound to before its last finished quarter.
+  if (live && done >= (e.detail === 'Halftime' ? 2 : Math.min(4, e.period - 1))) return e;
   const scoreAt = t => (t.quarters || []).slice(0, done).reduce((a, b) => a + b, 0);
   const away = { ...e.away, score: scoreAt(e.away), winner: false };
   const home = { ...e.home, score: scoreAt(e.home), winner: false };

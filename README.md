@@ -93,6 +93,9 @@ Your saved picks never depend on the feed. They are your own files.
 - Rows: name, then one cell per game, then Total, separated by tabs.
 - Cells: a nickname, `HIDDEN`, or `NO PICK`.
 
+Once games have started (week 12, 2026), the copy adds a Rank column before each name, a Correct column
+after it, and a score next to each team in the header (`Packers 13`, `Saints -`). Both layouts work.
+
 A two-row header (as it looks on screen) also works. If the site changes the layout, the Import screen
 shows an error instead of saving bad data. Add the new paste as a fixture in `tests/fixtures/` and adjust
 `parseGrid()`.
@@ -101,7 +104,7 @@ shows an error instead of saving bad data. Add the new paste as a fixture in `te
 
 ```
 index.html, css/style.css
-js/app.js       UI: Live, Picks, Import + confirmation
+js/app.js       UI: Live, Picks, Season, Import + confirmation, player card
 js/parser.js    grid parsing, schedule matching, tiebreaker game
 js/names.js     roster matching, aliases, initials
 js/merge.js     week file format + re-paste merge rules
@@ -111,9 +114,29 @@ js/store.js     load/save data files (local server, or one GitHub commit when ho
 js/odds.js      game win chances + week win odds (Monte Carlo)
 js/replay.js    rewinds a finished week to any moment (replay mode)
 js/demo.js      demo picks for week 10 replay (never saved)
+js/season.js    week winners and season standings
+js/history.js   win % over time (odds recomputed at each lock and quarter end)
+js/chart.js     the line chart (inline SVG) and its hover readout
 tools/serve.ps1 local server
 tests/          browser test page + real fixtures
 ```
+
+## Trackers
+
+- **Season tab:** total right for every saved week, weeks won, and each week's count (green = won it,
+  grey = still being played). Tap any column to sort. Week winner: most right, then closest to the
+  Monday-night total (either side), else split. Season tiebreaker: lowest average Monday miss. The
+  pasted grid shows guesses as `XX`, so for now tied weeks split and the season tiebreaker is blank.
+  Totals only cover weeks saved here: to add an older week, choose it in the week menu, then paste
+  that week's grid on Import.
+- **Player card:** tap any name. Right so far, max possible, chance to win the week, projected total,
+  whether they're out, the games they need (their chance if that game goes wrong → right, with
+  "must win" when losing it ends their week), their line on the chart next to yours, and their season line.
+- **Win % over time (Live tab):** you plus the four players most likely to win. Worked out after the
+  fact by replaying the week up to now (each pick lock and each quarter end, using the feed's quarter
+  scores), so it fills in even if no one had the page open. Points are evenly spaced, with a divider
+  for each day. It uses the picks saved now, so after the Sunday re-paste the whole line is redrawn
+  with everyone's real picks.
 
 ## Odds (Phase 2)
 

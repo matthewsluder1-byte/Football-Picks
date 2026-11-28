@@ -11,7 +11,7 @@
     // Add any new js/ module to this list.
     (function () {
       var v = Date.now(), imports = {};
-      ['app', 'espn', 'parser', 'names', 'merge', 'scoring', 'store', 'odds', 'replay', 'demo'].forEach(function (m) {
+      ['app', 'espn', 'parser', 'names', 'merge', 'scoring', 'store', 'odds', 'replay', 'demo', 'season', 'history', 'chart'].forEach(function (m) {
         imports[new URL('js/' + m + '.js', location.href).href] = new URL('js/' + m + '.js?v=' + v, location.href).href;
       });
       var map = document.createElement('script');
@@ -34,9 +34,11 @@
   <nav class="tabs">
     <button data-tab="live" class="on">Live</button>
     <button data-tab="picks">Picks</button>
+    <button data-tab="season">Season</button>
     <button data-tab="import">Import</button>
   </nav>
   <main id="view"><p class="muted">Loading…</p></main>
+  <dialog id="card" class="card"></dialog>
   <script type="module">import './js/app.js';</script>
 </body>
 </html>
