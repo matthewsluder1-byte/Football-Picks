@@ -8,6 +8,10 @@
 //   " Total " / " Points "      <- header end
 //   Name<TAB>pick<TAB>...<TAB>XX   <- one row per player, one cell per game, then Total
 // Cell values: a team nickname, "HIDDEN" (picks hidden until lock), "NO PICK".
+// Once games have started the copy changes (2026 week 12):
+//   "Rank \t Player Name \tCorrect" / "Picks\t"   <- header start
+//   Packers<TAB>13 / Saints<TAB>-     <- each team line carries its score ("-" = not played yet)
+//   1<TAB>Garcia, Emma<TAB>4<TAB>pick...<TAB>XX   <- rank and correct-count around the name
 // Also accepted: a two-row header (away teams on row 1, home teams on row 2, tab-separated),
 // which is how the grid looks on screen.
 
@@ -23,7 +27,9 @@ export const NICKNAMES = {
   Titans: 'TEN', Commanders: 'WSH',
 };
 const NICK_LOWER = new Set(Object.keys(NICKNAMES).map(n => n.toLowerCase()));
-const HEADER_WORDS = /^(player\s*name|total|points|total\s*points|tie\s*breaker|tiebreaker)$/i;
+const HEADER_WORDS = /^(player\s*name|total|points|total\s*points|tie\s*breaker|tiebreaker|rank|correct|picks)$/i;
+const isScore = s => /^(-|\d+)$/.test(String(s).trim());   // a team's score in the header, or "-"
+const isRank = s => /^T?\d+$/i.test(String(s).trim());     // "1", "21", maybe "T4"
 
 /** Display form: collapse spaces, no space before a comma, one space after it. */
 export function cleanName(raw) {
@@ -43,8 +49,20 @@ export function nameKey(raw) {
 
 const isTeamWord = s => NICK_LOWER.has(String(s).trim().toLowerCase());
 
+/** Splits a player row: an optional rank before the name, and an optional correct-count after it. */
+function rowCells(line) {
+  let cells = line.split('\t');
+  let rank = '', correct = '';
+  if (cells.length > 2 && isRank(cells[0]) && /[a-z]/i.test(cells[1])) {
+    rank = cells[0].trim();
+    cells = cells.slice(1);
+    if (cells.length > 2 && /^\d+$/.test(cells[1].trim())) { correct = cells[1].trim(); cells = [cells[0], ...cells.slice(2)]; }
+  }
+  return { cells, rank, correct };
+}
+
 function isDataRow(line) {
-  const cells = line.split('\t');
+  const { cells } = rowCells(line);
   if (cells.length < 2) return false;
   const first = cells[0].trim();
   if (!/[a-z]/i.test(first) || HEADER_WORDS.test(first) || isTeamWord(first)) return false;
@@ -54,7 +72,7 @@ function isDataRow(line) {
 function parseHeader(headerLines, warnings) {
   // Two-row on-screen layout: two lines that each hold 2+ team names separated by tabs.
   const teamRows = headerLines
-    .map(l => l.split('\t').map(c => c.trim()).filter(c => c && !HEADER_WORDS.test(c)))
+    .map(l => l.split('\t').map(c => c.trim()).filter(c => c && !HEADER_WORDS.test(c) && !isScore(c)))
     .filter(cells => cells.length >= 2 && cells.every(isTeamWord));
   if (teamRows.length === 2 && teamRows[0].length === teamRows[1].length) {
     return teamRows[0].map((away, i) => ({ away, home: teamRows[1][i] }));
@@ -62,7 +80,7 @@ function parseHeader(headerLines, warnings) {
   const tokens = headerLines
     .flatMap(l => l.split('\t'))
     .map(c => c.trim())
-    .filter(c => c && !HEADER_WORDS.test(c));
+    .filter(c => c && !HEADER_WORDS.test(c) && !isScore(c));
   for (const t of tokens) if (!isTeamWord(t)) warnings.push(`Header: "${t}" is not a known team nickname`);
   if (tokens.length % 2) warnings.push(`Header has ${tokens.length} team names (expected an even number)`);
   const out = [];
@@ -100,7 +118,7 @@ export function parseGrid(text) {
   lines.slice(first).forEach((line, i) => {
     if (!line.trim()) return;
     if (!isDataRow(line)) { warnings.push(`Skipped line ${first + i + 1}: "${line.slice(0, 40)}"`); return; }
-    const cells = line.split('\t');
+    const { cells, rank, correct } = rowCells(line);
     const name = cleanName(cells[0]);
     const key = nameKey(cells[0]);
     if (cells.length - 1 < G) errors.push(`${name}: ${cells.length - 1} cells, expected ${G} picks`);
@@ -111,7 +129,7 @@ export function parseGrid(text) {
     if (seen.has(key)) errors.push(`${name} appears twice`);
     seen.add(key);
     const rest = cells.slice(1 + G).map(c => c.trim());
-    rows.push({ name, key, picks, total: rest[0] ?? '', extras: rest.slice(1).filter(Boolean) });
+    rows.push({ name, key, picks, total: rest[0] ?? '', extras: rest.slice(1).filter(Boolean), rank, correct });
   });
   if (rows.some(r => r.extras.length)) warnings.push('Some rows have extra columns after Total. They are kept but not used yet.');
   return { matchups, rows, errors, warnings };

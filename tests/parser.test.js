@@ -52,6 +52,30 @@ test('duplicate player is an error', () => {
   const g = parseGrid('Player Name\nCommanders\nGiants\nDoe, Jane\tGiants\tXX\nDoe ,  Jane\tGiants\tXX\n');
   ok(g.errors.some(e => e.includes('twice')));
 });
+// Copy taken after kickoff (week 12): rank + correct around the name, scores in the header.
+const W12_TEAMS = 'Packers 13|Rams 26|Bears 39|Lions 35|Eagles 39|Cowboys 38|Chiefs 10|Bills 13|Broncos 5|Steelers 27|Saints -|Bengals -|Ravens -|Texans -|Giants -|Colts -|Titans -|Jaguars -|Jets -|Dolphins -|Falcons -|Vikings -|Patriots -|Chargers -|Commanders -|Cardinals -|Seahawks -|49ers -|Raiders -|Browns -|Panthers -|Buccaneers -'
+  .split('|').map(t => t.replace(' ', '\t'));
+const w12row = (rank, name, correct, five, rest) => [rank, name, correct, ...five.split(' '), ...Array(11).fill(rest), 'XX'].join('\t');
+const w12 = ['Rank \t Player Name \tCorrect', 'Picks\t', ...W12_TEAMS, ' Total ', ' Points ',
+  w12row('1', 'Garcia, Emma', '4', 'Rams Bears Cowboys Bills Steelers', 'NO PICK'),
+  w12row('1', 'Gilkey  , Jeff "Gick"', '4', 'Rams Bears Eagles Bills Broncos', 'HIDDEN'),
+  w12row('21', 'Wilson, Jim', '2', 'X Bears Cowboys Bills Broncos', 'HIDDEN').replace('\tX\t', '\tNO PICK\t'),
+  w12row('51', 'Andersen, Harry', '0', 'X X X X Broncos', 'HIDDEN').replace(/\tX(?=\t)/g, '\tNO PICK'),
+].join('\n');
+test('after kickoff: rank, correct and scores in the copy', () => {
+  const g = parseGrid(w12);
+  eq([g.errors, g.warnings], [[], []]);
+  eq(g.matchups.length, 16);
+  eq(g.matchups[0], { away: 'Packers', home: 'Rams' });
+  eq(g.matchups[15], { away: 'Panthers', home: 'Buccaneers' });
+  eq(g.rows.map(r => [r.name, r.rank, r.correct]), [['Garcia, Emma', '1', '4'], ['Gilkey, Jeff "Gick"', '1', '4'], ['Wilson, Jim', '21', '2'], ['Andersen, Harry', '51', '0']]);
+  eq(g.rows[0].picks.slice(0, 6).map(p => p.side || p.status), ['home', 'away', 'home', 'home', 'home', NONE]);
+  eq(g.rows[2].picks[0].status, NONE);
+  eq(g.rows[3].picks.slice(0, 5).map(p => p.side || p.status), [NONE, NONE, NONE, NONE, 'away']);
+  eq(g.rows[1].picks[15].status, HIDDEN);
+  eq(g.rows[1].total, 'XX');
+});
+
 test('garbage paste gives a clear error', () => ok(parseGrid('hello world').errors[0].includes('No player rows')));
 
 // ---------- schedule ----------
