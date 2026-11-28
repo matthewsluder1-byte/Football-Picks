@@ -1,0 +1,375 @@
+{
+  "players": [
+    {
+      "id": "andersen-harry",
+      "name": "Andersen, Harry",
+      "key": "andersen,harry",
+      "aliases": [],
+      "initials": "HA"
+    },
+    {
+      "id": "baca-ryan",
+      "name": "Baca, Ryan",
+      "key": "baca,ryan",
+      "aliases": [],
+      "initials": "RB"
+    },
+    {
+      "id": "branom-amanda",
+      "name": "Branom, Amanda",
+      "key": "branom,amanda",
+      "aliases": [],
+      "initials": "AB"
+    },
+    {
+      "id": "branom-doug",
+      "name": "Branom, Doug",
+      "key": "branom,doug",
+      "aliases": [],
+      "initials": "DB"
+    },
+    {
+      "id": "bunce-peggy",
+      "name": "Bunce, Peggy",
+      "key": "bunce,peggy",
+      "aliases": [],
+      "initials": "PB"
+    },
+    {
+      "id": "bunce-tom",
+      "name": "Bunce, Tom",
+      "key": "bunce,tom",
+      "aliases": [],
+      "initials": "TB"
+    },
+    {
+      "id": "chapman-chris",
+      "name": "Chapman, Chris",
+      "key": "chapman,chris",
+      "aliases": [],
+      "initials": "CC"
+    },
+    {
+      "id": "chapman-michael",
+      "name": "Chapman, Michael",
+      "key": "chapman,michael",
+      "aliases": [],
+      "initials": "MC"
+    },
+    {
+      "id": "coffman-john",
+      "name": "Coffman, John",
+      "key": "coffman,john",
+      "aliases": [],
+      "initials": "JC"
+    },
+    {
+      "id": "covington-peggy-not-sue",
+      "name": "Covington, Peggy Not Sue",
+      "key": "covington,peggy not sue",
+      "aliases": [],
+      "initials": "PNSC"
+    },
+    {
+      "id": "crow-zach",
+      "name": "Crow, Zach",
+      "key": "crow,zach",
+      "aliases": [],
+      "initials": "ZC"
+    },
+    {
+      "id": "dana-dylan",
+      "name": "Dana, Dylan",
+      "key": "dana,dylan",
+      "aliases": [],
+      "initials": "DD"
+    },
+    {
+      "id": "dana-mitch",
+      "name": "Dana, Mitch",
+      "key": "dana,mitch",
+      "aliases": [],
+      "initials": "MD"
+    },
+    {
+      "id": "dipaola-paul",
+      "name": "Dipaola, Paul",
+      "key": "dipaola,paul",
+      "aliases": [],
+      "initials": "PD"
+    },
+    {
+      "id": "earls-gavin",
+      "name": "Earls, Gavin",
+      "key": "earls,gavin",
+      "aliases": [],
+      "initials": "GE"
+    },
+    {
+      "id": "earls-mitch",
+      "name": "Earls, Mitch",
+      "key": "earls,mitch",
+      "aliases": [],
+      "initials": "ME"
+    },
+    {
+      "id": "garcia-emma",
+      "name": "Garcia, Emma",
+      "key": "garcia,emma",
+      "aliases": [],
+      "initials": "EG"
+    },
+    {
+      "id": "gilkey-jeff",
+      "name": "Gilkey, Jeff \"Gick\"",
+      "key": "gilkey,jeff",
+      "aliases": [],
+      "initials": "JefG"
+    },
+    {
+      "id": "gilkey-jenn",
+      "name": "Gilkey, Jenn",
+      "key": "gilkey,jenn",
+      "aliases": [],
+      "initials": "JenG"
+    },
+    {
+      "id": "gilkey-jonathan",
+      "name": "Gilkey, Jonathan \"JT\"",
+      "key": "gilkey,jonathan",
+      "aliases": [],
+      "initials": "JonG"
+    },
+    {
+      "id": "haines-rob",
+      "name": "Haines, Rob",
+      "key": "haines,rob",
+      "aliases": [],
+      "initials": "RH"
+    },
+    {
+      "id": "harkrider-mike",
+      "name": "Harkrider, Mike",
+      "key": "harkrider,mike",
+      "aliases": [],
+      "initials": "MiH"
+    },
+    {
+      "id": "harmon-mark",
+      "name": "Harmon, Mark",
+      "key": "harmon,mark",
+      "aliases": [],
+      "initials": "MaH"
+    },
+    {
+      "id": "heagy-traci",
+      "name": "Heagy, Traci",
+      "key": "heagy,traci",
+      "aliases": [],
+      "initials": "TH"
+    },
+    {
+      "id": "hoover-bruce",
+      "name": "Hoover, Bruce",
+      "key": "hoover,bruce",
+      "aliases": [],
+      "initials": "BH"
+    },
+    {
+      "id": "hoover-scott",
+      "name": "Hoover, Scott",
+      "key": "hoover,scott",
+      "aliases": [],
+      "initials": "SH"
+    },
+    {
+      "id": "johnson-juanita",
+      "name": "Johnson, Juanita",
+      "key": "johnson,juanita",
+      "aliases": [],
+      "initials": "JJ"
+    },
+    {
+      "id": "kemper-dale",
+      "name": "Kemper, Dale",
+      "key": "kemper,dale",
+      "aliases": [],
+      "initials": "DKe"
+    },
+    {
+      "id": "kuidis-deb",
+      "name": "Kuidis, Deb",
+      "key": "kuidis,deb",
+      "aliases": [],
+      "initials": "DKu"
+    },
+    {
+      "id": "kuidis-gary",
+      "name": "Kuidis, Gary",
+      "key": "kuidis,gary",
+      "aliases": [],
+      "initials": "GK"
+    },
+    {
+      "id": "kuidis-kyle",
+      "name": "Kuidis, Kyle",
+      "key": "kuidis,kyle",
+      "aliases": [],
+      "initials": "KK"
+    },
+    {
+      "id": "leong-richard",
+      "name": "Leong, Richard",
+      "key": "leong,richard",
+      "aliases": [],
+      "initials": "RL"
+    },
+    {
+      "id": "martin-daniel",
+      "name": "Martin, Daniel",
+      "key": "martin,daniel",
+      "aliases": [],
+      "initials": "DM"
+    },
+    {
+      "id": "martin-stan",
+      "name": "Martin, Stan",
+      "key": "martin,stan",
+      "aliases": [],
+      "initials": "SM"
+    },
+    {
+      "id": "mons-mike",
+      "name": "Mons, Mike",
+      "key": "mons,mike",
+      "aliases": [],
+      "initials": "MM"
+    },
+    {
+      "id": "parker-nick",
+      "name": "Parker, Nick",
+      "key": "parker,nick",
+      "aliases": [],
+      "initials": "NPa"
+    },
+    {
+      "id": "penny-dick",
+      "name": "Penny, Dick",
+      "key": "penny,dick",
+      "aliases": [],
+      "initials": "DP"
+    },
+    {
+      "id": "perron-c-j",
+      "name": "Perron, C & J",
+      "key": "perron,c & j",
+      "aliases": [],
+      "initials": "CJP"
+    },
+    {
+      "id": "piltch-neal",
+      "name": "Piltch, Neal",
+      "key": "piltch,neal",
+      "aliases": [],
+      "initials": "NPi"
+    },
+    {
+      "id": "roberts-tom",
+      "name": "Roberts, Tom",
+      "key": "roberts,tom",
+      "aliases": [],
+      "initials": "TR"
+    },
+    {
+      "id": "sluder-matt",
+      "name": "Sluder, Matt",
+      "key": "sluder,matt",
+      "aliases": [],
+      "initials": "MSl"
+    },
+    {
+      "id": "sluder-stan",
+      "name": "Sluder, Stan",
+      "key": "sluder,stan",
+      "aliases": [],
+      "initials": "SS"
+    },
+    {
+      "id": "smokov-matt",
+      "name": "Smokov, Matt",
+      "key": "smokov,matt",
+      "aliases": [],
+      "initials": "MSm"
+    },
+    {
+      "id": "stanovcak-joe",
+      "name": "Stanovcak, Joe",
+      "key": "stanovcak,joe",
+      "aliases": [],
+      "initials": "JoeS"
+    },
+    {
+      "id": "stanovcak-joshua",
+      "name": "Stanovcak, Joshua",
+      "key": "stanovcak,joshua",
+      "aliases": [],
+      "initials": "JosS"
+    },
+    {
+      "id": "tedstrom-doug",
+      "name": "Tedstrom, Doug",
+      "key": "tedstrom,doug",
+      "aliases": [],
+      "initials": "DTe"
+    },
+    {
+      "id": "tedstrom-martha",
+      "name": "Tedstrom, Martha",
+      "key": "tedstrom,martha",
+      "aliases": [],
+      "initials": "MT"
+    },
+    {
+      "id": "thorpe-dan",
+      "name": "Thorpe, Dan",
+      "key": "thorpe,dan",
+      "aliases": [],
+      "initials": "DTh"
+    },
+    {
+      "id": "thorpe-ryan",
+      "name": "Thorpe, Ryan",
+      "key": "thorpe,ryan",
+      "aliases": [],
+      "initials": "RT"
+    },
+    {
+      "id": "tomasi-k-and-a",
+      "name": "Tomasi, K and A",
+      "key": "tomasi,k and a",
+      "aliases": [],
+      "initials": "KAT"
+    },
+    {
+      "id": "velletta-jim",
+      "name": "Velletta, Jim",
+      "key": "velletta,jim",
+      "aliases": [],
+      "initials": "JVe"
+    },
+    {
+      "id": "vinyard-jeff",
+      "name": "Vinyard, Jeff",
+      "key": "vinyard,jeff",
+      "aliases": [],
+      "initials": "JVi"
+    },
+    {
+      "id": "wilson-jim",
+      "name": "Wilson, Jim",
+      "key": "wilson,jim",
+      "aliases": [],
+      "initials": "JW"
+    }
+  ]
+}
